@@ -31,7 +31,7 @@ env/
 
 # Data and indexes (large, regenerable)
 data/
-index/
+# index/
 *.faiss
 *.index
 *.pkl
@@ -59,3 +59,4 @@ desktop.ini
 logs/
 
 rough.txt
+

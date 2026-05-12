@@ -1,0 +1,7 @@
+{
+  "pages": 298,
+  "chunks": 1350,
+  "embedding_model": "text-embedding-3-small",
+  "chunk_size": 500,
+  "chunk_overlap": 50
+}
