@@ -239,7 +239,7 @@ make clean      # remove generated data and indexes
 
 ## Deployment
 
-_To be added — planned deployment on [gaaten.com](https://gaaten.com)._
+_To be added — planned deployment on [gaaten.com](https://gaateh.com)._
 
 ## Cost notes
 
@@ -251,10 +251,3 @@ Per query:
 
 - One embedding call (query) + one chat call (`gpt-4o-mini` with ~2k tokens of context): roughly $0.0004.
 
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-## Acknowledgments
-
-Built as a project submission inspired by GitLab's [build-in-public philosophy](https://handbook.gitlab.com/handbook/values/#transparency). All handbook and direction content is the property of GitLab Inc. and is used here under their public licensing.
