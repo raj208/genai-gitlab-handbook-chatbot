@@ -43,6 +43,43 @@ SLEEP_BETWEEN_REQUESTS = 0.2  # be polite
 SM_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 
 
+# High-value pages that must always be included in the corpus, regardless
+# of where they fall in the sitemap. These cover the kinds of questions
+# employees and candidates actually ask.
+SEED_URLS: list[tuple[str, str]] = [
+    # Core company & values
+    ("https://handbook.gitlab.com/handbook/values/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/company/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/company/mission/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/company/strategy/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/company/culture/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/company/culture/all-remote/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/company/culture/all-remote/guide/", "handbook"),
+
+    # Communication
+    ("https://handbook.gitlab.com/handbook/communication/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/communication/top-misused-terms/", "handbook"),
+
+    # Leadership & people
+    ("https://handbook.gitlab.com/handbook/leadership/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/people-group/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/people-group/learning-and-development/career-development/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/people-group/code-of-conduct/", "handbook"),
+
+    # Hiring (relevant to "aspiring employees")
+    ("https://handbook.gitlab.com/handbook/hiring/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/hiring/interviewing/", "handbook"),
+
+    # Engineering & product
+    ("https://handbook.gitlab.com/handbook/engineering/", "handbook"),
+    ("https://handbook.gitlab.com/handbook/product/", "handbook"),
+
+    # Direction
+    ("https://about.gitlab.com/direction/", "direction"),
+    ("https://about.gitlab.com/direction/maturity/", "direction"),
+]
+
+
 # --- Data model ------------------------------------------------------------
 
 @dataclass
@@ -83,9 +120,11 @@ def _fetch_sitemap_urls(session: requests.Session, sitemap_url: str) -> list[str
         if loc.text
     ]
 
-
 def _collect_urls(session: requests.Session) -> list[tuple[str, str]]:
-    """Returns list of (url, source_label) tuples for handbook + direction."""
+    """Returns list of (url, source_label) tuples for handbook + direction.
+
+    Seed URLs are placed first so they are guaranteed to land within any --limit.
+    """
     print("Fetching handbook sitemap...")
     handbook_urls = _fetch_sitemap_urls(session, SITEMAP_URL)
     print(f"  {len(handbook_urls)} handbook URLs")
@@ -95,18 +134,22 @@ def _collect_urls(session: requests.Session) -> list[tuple[str, str]]:
     direction_urls = [u for u in direction_all if u.startswith(DIRECTION_PREFIX)]
     print(f"  {len(direction_urls)} direction URLs (filtered)")
 
-    pairs: list[tuple[str, str]] = []
+    # Seeds first, then sitemap pages
+    pairs: list[tuple[str, str]] = list(SEED_URLS)
     pairs.extend((u, "handbook") for u in handbook_urls)
     pairs.extend((u, "direction") for u in direction_urls)
 
-    # Dedupe while preserving order
+    # Dedupe while preserving order — seeds will win on ordering
     seen: set[str] = set()
     unique: list[tuple[str, str]] = []
     for u, src in pairs:
         if u not in seen:
             seen.add(u)
             unique.append((u, src))
+
+    print(f"  {len(SEED_URLS)} seed URLs placed first")
     return unique
+
 
 
 def _clean_text(text: str) -> str:
@@ -202,6 +245,7 @@ def main(argv: list[str] | None = None) -> int:
 
     n = ingest(limit=args.limit, output_path=args.output)
     return 0 if n > 0 else 1
+
 
 
 if __name__ == "__main__":
