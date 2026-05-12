@@ -1,0 +1,196 @@
+/* ── Google Font ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Root variables ── */
+:root {
+    --bg-primary: #0B0B14;
+    --bg-secondary: #12121F;
+    --bg-card: #16162A;
+    --bg-elevated: #1E1E36;
+    --accent: #7C3AED;
+    --accent-light: #A78BFA;
+    --accent-glow: rgba(124, 58, 237, 0.25);
+    --success: #10B981;
+    --warning: #F59E0B;
+    --error: #EF4444;
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --border: rgba(148, 163, 184, 0.08);
+    --border-accent: rgba(124, 58, 237, 0.3);
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Global ── */
+html, body, [data-testid="stAppViewContainer"], .main, .block-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--text-primary) !important;
+}
+
+.block-container {
+    max-width: 860px !important;
+    padding-top: 2rem !important;
+    padding-bottom: 4rem !important;
+}
+
+/* Hide default Streamlit header/footer */
+header[data-testid="stHeader"] { background: transparent !important; }
+#MainMenu, footer, header .stDeployButton { display: none !important; }
+
+/* ── Sidebar ── */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0F0F1E 0%, #131328 100%) !important;
+    border-right: 1px solid var(--border) !important;
+}
+section[data-testid="stSidebar"] .block-container { padding-top: 1.5rem !important; }
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3 {
+    font-weight: 600 !important;
+    letter-spacing: -0.01em;
+}
+
+/* ── Chat messages ── */
+[data-testid="stChatMessage"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    padding: 1.1rem 1.4rem !important;
+    margin-bottom: 0.8rem !important;
+    animation: fadeSlideUp 0.35s ease-out;
+    backdrop-filter: blur(8px);
+}
+
+/* Assistant messages get a subtle accent border */
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
+    border-left: 3px solid var(--accent) !important;
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(124,58,237,0.04) 100%) !important;
+}
+
+/* User messages — slightly different tone */
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+    background: var(--bg-elevated) !important;
+    border-left: 3px solid var(--accent-light) !important;
+}
+
+/* Chat input */
+[data-testid="stChatInput"] {
+    border-color: var(--border-accent) !important;
+}
+[data-testid="stChatInput"] textarea {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.95rem !important;
+}
+
+/* ── Buttons ── */
+.stButton > button {
+    background: linear-gradient(135deg, var(--accent) 0%, #6D28D9 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.02em;
+    padding: 0.55rem 1.2rem !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 2px 12px var(--accent-glow) !important;
+}
+.stButton > button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 20px var(--accent-glow) !important;
+    filter: brightness(1.1) !important;
+}
+
+/* ── Expander (Sources) ── */
+[data-testid="stExpander"] {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    margin-top: 0.6rem !important;
+    overflow: hidden;
+}
+[data-testid="stExpander"] summary {
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    color: var(--accent-light) !important;
+}
+
+/* ── Alerts / banners ── */
+[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    font-size: 0.88rem !important;
+    border: none !important;
+}
+
+/* Info alert — branded style */
+div[data-testid="stAlert"][data-baseweb*="info"],
+.stAlert:has([data-testid="stNotificationContentInfo"]) {
+    background: rgba(124, 58, 237, 0.08) !important;
+    border-left: 3px solid var(--accent) !important;
+}
+
+/* Warning alert */
+.stAlert:has([data-testid="stNotificationContentWarning"]) {
+    background: rgba(245, 158, 11, 0.08) !important;
+    border-left: 3px solid var(--warning) !important;
+}
+
+/* ── Metric cards in sidebar ── */
+[data-testid="stMetric"] {
+    background: var(--bg-elevated) !important;
+    border-radius: 10px !important;
+    padding: 0.8rem !important;
+    border: 1px solid var(--border) !important;
+}
+[data-testid="stMetricLabel"] { font-size: 0.75rem !important; color: var(--text-muted) !important; }
+[data-testid="stMetricValue"] { font-size: 1.3rem !important; font-weight: 700 !important; color: var(--accent-light) !important; }
+
+/* ── Dividers ── */
+hr {
+    border-color: var(--border) !important;
+    margin: 0.8rem 0 !important;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── Animations ── */
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ── Confidence badge (injected via markdown) ── */
+.confidence-high { color: var(--success); font-weight: 600; }
+.confidence-low { color: var(--warning); font-weight: 600; }
+
+/* ── Source card styling ── */
+.source-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.5rem;
+    transition: border-color 0.2s ease;
+}
+.source-card:hover { border-color: var(--accent); }
+
+/* ── Code blocks inside chat ── */
+[data-testid="stChatMessage"] code {
+    background: rgba(124, 58, 237, 0.12) !important;
+    color: var(--accent-light) !important;
+    padding: 0.15em 0.4em !important;
+    border-radius: 4px !important;
+    font-size: 0.85em !important;
+}
+
+/* ── Spinner ── */
+.stSpinner > div { border-top-color: var(--accent) !important; }
