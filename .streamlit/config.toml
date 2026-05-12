@@ -1,0 +1,14 @@
+[server]
+# Disable file watcher — critical on OneDrive folders where inotify/polling is slow
+fileWatcherType = "none"
+headless = true
+# Increase max upload size if needed
+maxUploadSize = 200
+
+[browser]
+# Prevent Streamlit from trying to gather stats
+gatherUsageStats = false
+
+[runner]
+# Faster reruns — no source change detection
+fastReruns = true
