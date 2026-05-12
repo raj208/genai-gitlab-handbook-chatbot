@@ -239,7 +239,7 @@ make clean      # remove generated data and indexes
 
 ## Deployment
 
-_To be added — planned deployment on [gaaten.com](https://gaateh.com)._
+_To be added — planned deployment on [gaateh.com](https://gaateh.com)._
 
 ## Cost notes
 
