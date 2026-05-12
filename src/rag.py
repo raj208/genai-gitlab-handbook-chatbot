@@ -9,6 +9,8 @@ from openai import OpenAI
 
 from src.config import settings
 from src.retriever import Retriever, RetrievedChunk
+from src.guardrails import check_input, classify_confidence, REFUSAL_MESSAGE
+
 
 
 SYSTEM_PROMPT = """\
@@ -19,11 +21,15 @@ Rules you must follow:
 1. Base every factual claim on the SOURCE PASSAGES. Do not use outside knowledge.
 2. After each claim, cite the source it came from using bracketed numbers like
    [1] or [2, 3]. The numbers refer to the source order shown to you.
-3. If the passages do not contain enough information to answer, reply exactly:
+3. Citation rules — these are strict:
+   - Never repeat the same number within one citation. Write [1], not [1, 1].
+   - List numbers in ascending order: [1, 3], not [3, 1].
+   - Only cite numbers that actually appear in the SOURCE PASSAGES section.
+4. If the passages do not contain enough information to answer, reply exactly:
    "I don't have enough information in the GitLab handbook to answer that."
    Do not guess, speculate, or fall back on general knowledge.
-4. Keep answers clear, neutral, and concise. Prefer short paragraphs.
-5. Do not invent URLs, names, dates, or numbers that are not in the passages.
+5. Keep answers clear, neutral, and concise. Prefer short paragraphs.
+6. Do not invent URLs, names, dates, or numbers that are not in the passages.
 """
 
 
@@ -42,7 +48,7 @@ class RagResponse:
     sources: list[Source] = field(default_factory=list)
     retrieved: list[RetrievedChunk] = field(default_factory=list)
     top_score: float = 0.0
-    # Flags filled in by Step 6 guardrails layer later
+    confidence: str = "high"   # 'high' | 'low_confidence' | 'refuse'
     refused: bool = False
     refusal_reason: str = ""
 
@@ -89,26 +95,42 @@ class RagPipeline:
         self.client = client or OpenAI(api_key=settings.openai_api_key)
 
     def answer(self, question: str, top_k: int | None = None) -> RagResponse:
-        question = (question or "").strip()
-        if not question:
+        # Input-level guardrails
+        block = check_input(question)
+        if block is not None:
             return RagResponse(
-                answer="Please enter a question.",
+                answer=block.message,
+                confidence="refuse",
                 refused=True,
-                refusal_reason="empty_query",
+                refusal_reason=block.reason,
             )
 
+        question = question.strip()
         retrieved = self.retriever.search(question, top_k=top_k)
         if not retrieved:
             return RagResponse(
-                answer="I don't have enough information in the GitLab handbook to answer that.",
+                answer=REFUSAL_MESSAGE,
+                confidence="refuse",
                 refused=True,
                 refusal_reason="no_results",
             )
 
+        top_score = max(ch.score for ch in retrieved)
+        confidence = classify_confidence(top_score)
+
+        # Retrieval-level guardrail: refuse before calling the LLM
+        if confidence == "refuse":
+            return RagResponse(
+                answer=REFUSAL_MESSAGE,
+                retrieved=retrieved,
+                top_score=top_score,
+                confidence="refuse",
+                refused=True,
+                refusal_reason="low_similarity",
+            )
+
         sources = _dedupe_by_url(retrieved)
         context = _build_context_block(retrieved, sources)
-        top_score = max(ch.score for ch in retrieved)
-
         user_message = (
             f"SOURCE PASSAGES:\n\n{context}\n\n"
             f"---\n\nQUESTION: {question}\n\n"
@@ -130,51 +152,46 @@ class RagPipeline:
             sources=sources,
             retrieved=retrieved,
             top_score=top_score,
+            confidence=confidence,
         )
-    
     
     def answer_stream(self, question: str, top_k: int | None = None):
         """
-        Streaming variant of .answer().
-
-        Yields a sequence of items:
-          - dict {"type": "meta", "sources": [...], "retrieved": [...], "top_score": float}
-            sent once at the start, before any tokens
-          - str tokens as they arrive from the LLM
-          - dict {"type": "done"} at the end
-
-        For empty queries or no-result cases, yields a single dict with
-        {"type": "refusal", "answer": str, "reason": str} and nothing else.
+        Streaming variant of .answer(). Yields:
+          - {"type": "refusal", "answer": str, "reason": str}  (short-circuit)
+          - {"type": "meta", "sources": [...], "retrieved": [...],
+             "top_score": float, "confidence": str}            (before tokens)
+          - str token deltas
+          - {"type": "done"}
         """
-        question = (question or "").strip()
-        if not question:
-            yield {
-                "type": "refusal",
-                "answer": "Please enter a question.",
-                "reason": "empty_query",
-            }
+        # Input-level guardrails
+        block = check_input(question)
+        if block is not None:
+            yield {"type": "refusal", "answer": block.message, "reason": block.reason}
             return
 
+        question = question.strip()
         retrieved = self.retriever.search(question, top_k=top_k)
         if not retrieved:
-            yield {
-                "type": "refusal",
-                "answer": "I don't have enough information in the GitLab handbook to answer that.",
-                "reason": "no_results",
-            }
+            yield {"type": "refusal", "answer": REFUSAL_MESSAGE, "reason": "no_results"}
+            return
+
+        top_score = max(ch.score for ch in retrieved)
+        confidence = classify_confidence(top_score)
+
+        if confidence == "refuse":
+            yield {"type": "refusal", "answer": REFUSAL_MESSAGE, "reason": "low_similarity"}
             return
 
         sources = _dedupe_by_url(retrieved)
         context = _build_context_block(retrieved, sources)
-        top_score = max(ch.score for ch in retrieved)
 
-        # Emit metadata first so the UI can render the source panel
-        # before tokens start arriving.
         yield {
             "type": "meta",
             "sources": sources,
             "retrieved": retrieved,
             "top_score": top_score,
+            "confidence": confidence,
         }
 
         user_message = (
